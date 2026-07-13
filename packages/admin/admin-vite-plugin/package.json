@@ -1,6 +1,6 @@
 {
-  "name": "@medusajs/admin-vite-plugin",
-  "version": "2.17.2",
+  "name": "@sachin_workharu/admin-vite-plugin",
+  "version": "1.0.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -13,11 +13,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/medusajs/medusa.git",
+    "url": "git+https://github.com/Workharu/medusa.git",
     "directory": "packages/admin/admin-vite-plugin"
   },
   "bugs": {
-    "url": "https://github.com/medusajs/medusa/issues"
+    "url": "https://github.com/Workharu/medusa/issues"
   },
   "files": [
     "dist",
