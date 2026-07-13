@@ -13,6 +13,10 @@ import { Shell } from "../shell"
 import { UserMenu } from "../user-menu"
 import { useFeatureFlag } from "../../../providers/feature-flag-provider"
 import { usePermissions } from "../../../providers/permissions-provider"
+import {
+  SETTINGS_ROUTE_PERMISSIONS,
+  type Permission,
+} from "../../../lib/permissions"
 
 export const SettingsLayout = () => {
   return (
@@ -22,105 +26,118 @@ export const SettingsLayout = () => {
   )
 }
 
+/**
+ * Filters settings nav items to the ones the user is allowed to read,
+ * based on the shared route permission map.
+ */
+const useFilterByRoutePermission = () => {
+  const { hasPermission } = usePermissions()
+
+  return useMemo(
+    () => (routes: INavItem[]) =>
+      routes.filter((route) => {
+        const permission = SETTINGS_ROUTE_PERMISSIONS[route.to]
+        return !permission || hasPermission(permission)
+      }),
+    [hasPermission]
+  )
+}
+
 const useSettingRoutes = (): INavItem[] => {
   const isTranslationsEnabled = useFeatureFlag("translation")
   const isRbacEnabled = useFeatureFlag("rbac")
-  const { hasPermission } = usePermissions()
+  const filterByPermission = useFilterByRoutePermission()
   const { t } = useTranslation()
 
-  const canReadRoles = isRbacEnabled && hasPermission("rbac_role:read")
-  const canReadPolicies = isRbacEnabled && hasPermission("rbac_policy:read")
-
   return useMemo(
-    () => [
-      {
-        label: t("store.domain"),
-        to: "/settings/store",
-      },
-      {
-        label: t("users.domain"),
-        to: "/settings/users",
-      },
-      ...(canReadRoles
-        ? [
-            {
-              label: t("roles.domain"),
-              to: "/settings/roles",
-            },
-          ]
-        : []),
-      ...(canReadPolicies
-        ? [
-            {
-              label: t("policies.domain"),
-              to: "/settings/policies",
-            },
-          ]
-        : []),
-      {
-        label: t("regions.domain"),
-        to: "/settings/regions",
-      },
-      {
-        label: t("taxRegions.domain"),
-        to: "/settings/tax-regions",
-      },
-      {
-        label: t("returnReasons.domain"),
-        to: "/settings/return-reasons",
-      },
-      {
-        label: t("refundReasons.domain"),
-        to: "/settings/refund-reasons",
-      },
-      {
-        label: t("salesChannels.domain"),
-        to: "/settings/sales-channels",
-      },
-      {
-        label: t("productTypes.domain"),
-        to: "/settings/product-types",
-      },
-      {
-        label: t("productTags.domain"),
-        to: "/settings/product-tags",
-      },
-      {
-        label: t("stockLocations.domain"),
-        to: "/settings/locations",
-      },
-      ...(isTranslationsEnabled
-        ? [
-            {
-              label: t("translations.domain"),
-              to: "/settings/translations",
-            },
-          ]
-        : []),
-    ],
-    [t, isTranslationsEnabled, canReadRoles, canReadPolicies]
+    () =>
+      filterByPermission([
+        {
+          label: t("store.domain"),
+          to: "/settings/store",
+        },
+        {
+          label: t("users.domain"),
+          to: "/settings/users",
+        },
+        ...(isRbacEnabled
+          ? [
+              {
+                label: t("roles.domain"),
+                to: "/settings/roles",
+              },
+              {
+                label: t("policies.domain"),
+                to: "/settings/policies",
+              },
+            ]
+          : []),
+        {
+          label: t("regions.domain"),
+          to: "/settings/regions",
+        },
+        {
+          label: t("taxRegions.domain"),
+          to: "/settings/tax-regions",
+        },
+        {
+          label: t("returnReasons.domain"),
+          to: "/settings/return-reasons",
+        },
+        {
+          label: t("refundReasons.domain"),
+          to: "/settings/refund-reasons",
+        },
+        {
+          label: t("salesChannels.domain"),
+          to: "/settings/sales-channels",
+        },
+        {
+          label: t("productTypes.domain"),
+          to: "/settings/product-types",
+        },
+        {
+          label: t("productTags.domain"),
+          to: "/settings/product-tags",
+        },
+        {
+          label: t("stockLocations.domain"),
+          to: "/settings/locations",
+        },
+        ...(isTranslationsEnabled
+          ? [
+              {
+                label: t("translations.domain"),
+                to: "/settings/translations",
+              },
+            ]
+          : []),
+      ]),
+    [t, isTranslationsEnabled, isRbacEnabled, filterByPermission]
   )
 }
 
 const useDeveloperRoutes = (): INavItem[] => {
+  const filterByPermission = useFilterByRoutePermission()
   const { t } = useTranslation()
 
   return useMemo(
-    () => [
-      {
-        label: t("apiKeyManagement.domain.publishable"),
-        to: "/settings/publishable-api-keys",
-      },
-      {
-        label: t("apiKeyManagement.domain.secret"),
-        to: "/settings/secret-api-keys",
-      },
-      {
-        label: t("workflowExecutions.domain"),
-        to: "/settings/workflows",
-      },
-    ],
-    [t]
+    () =>
+      filterByPermission([
+        {
+          label: t("apiKeyManagement.domain.publishable"),
+          to: "/settings/publishable-api-keys",
+        },
+        {
+          label: t("apiKeyManagement.domain.secret"),
+          to: "/settings/secret-api-keys",
+        },
+        {
+          label: t("workflowExecutions.domain"),
+          to: "/settings/workflows",
+        },
+      ]),
+    [t, filterByPermission]
   )
 }
 
@@ -159,11 +176,20 @@ const toNavEntries = (items: INavItem[]) =>
 
 const SettingsSidebar = () => {
   const { getMenu } = useExtension()
+  const { hasAllPermissions } = usePermissions()
 
   const routes = useSettingRoutes()
   const developerRoutes = useDeveloperRoutes()
   const myAccountRoutes = useMyAccountRoutes()
-  const extensionRoutes = getMenu("settingsExtensions")
+  const extensionRoutes = getMenu("settingsExtensions").filter((item) => {
+    if (!item.permissions) {
+      return true
+    }
+    const permissions = (
+      Array.isArray(item.permissions) ? item.permissions : [item.permissions]
+    ) as Permission[]
+    return hasAllPermissions(permissions)
+  })
 
   return (
     <aside className="relative flex flex-1 flex-col justify-between overflow-y-auto">

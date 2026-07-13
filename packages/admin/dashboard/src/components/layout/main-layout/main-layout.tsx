@@ -25,8 +25,13 @@ import { Shell } from "../../layout/shell"
 
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useLogout } from "../../../hooks/api"
+import {
+  CORE_ROUTE_PERMISSIONS,
+  type Permission,
+} from "../../../lib/permissions"
 import { queryClient } from "../../../lib/query-client"
 import { useExtension } from "../../../providers/extension-provider"
+import { usePermissions } from "../../../providers/permissions-provider"
 import { useSearch } from "../../../providers/search-provider"
 import { UserMenu } from "../user-menu"
 import { useDocumentDirection } from "../../../hooks/use-document-direction"
@@ -180,8 +185,14 @@ const Header = () => {
 
 const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
   const { t } = useTranslation()
+  const { hasPermission } = usePermissions()
 
-  return [
+  const canAccess = (to: string) => {
+    const permission = CORE_ROUTE_PERMISSIONS[to]
+    return !permission || hasPermission(permission)
+  }
+
+  const routes: Omit<INavItem, "pathname">[] = [
     {
       icon: <ShoppingCart />,
       label: t("orders.domain"),
@@ -257,6 +268,13 @@ const useCoreRoutes = (): Omit<INavItem, "pathname">[] => {
       to: "/price-lists",
     },
   ]
+
+  return routes
+    .filter((route) => canAccess(route.to))
+    .map((route) => ({
+      ...route,
+      items: route.items?.filter((item) => canAccess(item.to)),
+    }))
 }
 
 const Searchbar = () => {
@@ -294,10 +312,26 @@ const Searchbar = () => {
  */
 const SidebarRoutes = () => {
   const coreRoutes = useCoreRoutes()
+  const { hasAllPermissions } = usePermissions()
 
   const { getMenu } = useExtension()
 
+  const canAccessItem = (item: { permissions?: string | string[] }) => {
+    if (!item.permissions) {
+      return true
+    }
+    const permissions = (
+      Array.isArray(item.permissions) ? item.permissions : [item.permissions]
+    ) as Permission[]
+    return hasAllPermissions(permissions)
+  }
+
   const menuItems = getMenu("coreExtensions")
+    .filter(canAccessItem)
+    .map((item) => ({
+      ...item,
+      items: item.items?.filter(canAccessItem),
+    }))
 
   menuItems.forEach((item) => {
     if (item.nested) {

@@ -84,7 +84,8 @@ export const useProductPermissions = () => useResourcePermissions("product")
 /**
  * Hook for checking inventory-specific permissions.
  */
-export const useInventoryPermissions = () => useResourcePermissions("inventory")
+export const useInventoryPermissions = () =>
+  useResourcePermissions("inventory_item")
 
 /**
  * Hook for checking user management permissions.

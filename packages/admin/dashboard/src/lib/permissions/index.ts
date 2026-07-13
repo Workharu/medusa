@@ -10,4 +10,9 @@ export type {
 
 export { OPERATION_IMPLICATIONS } from "./constants"
 
+export {
+  CORE_ROUTE_PERMISSIONS,
+  SETTINGS_ROUTE_PERMISSIONS,
+} from "./route-permissions"
+
 export { buildPermission, parsePermission } from "./utils"

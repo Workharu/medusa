@@ -7,6 +7,10 @@ import { MainLayout } from "../../components/layout/main-layout"
 import { PublicLayout } from "../../components/layout/public-layout"
 import { SettingsLayout } from "../../components/layout/settings-layout"
 import { ErrorBoundary } from "../../components/utilities/error-boundary"
+import {
+  CORE_ROUTE_PERMISSIONS,
+  SETTINGS_ROUTE_PERMISSIONS,
+} from "../../lib/permissions"
 
 export function getRouteMap({
   settingsRoutes,
@@ -31,8 +35,10 @@ export function getRouteMap({
             {
               path: "/products",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("products.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/products"],
               },
               children: [
                 {
@@ -225,8 +231,10 @@ export function getRouteMap({
             {
               path: "/product-options",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("productOptions.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/product-options"],
               },
               children: [
                 {
@@ -320,8 +328,10 @@ export function getRouteMap({
             {
               path: "/categories",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("categories.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/categories"],
               },
               children: [
                 {
@@ -386,8 +396,10 @@ export function getRouteMap({
             {
               path: "/orders",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("orders.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/orders"],
               },
               children: [
                 {
@@ -499,8 +511,10 @@ export function getRouteMap({
             {
               path: "/promotions",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("promotions.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/promotions"],
               },
               children: [
                 {
@@ -557,8 +571,10 @@ export function getRouteMap({
             {
               path: "/campaigns",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("campaigns.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/campaigns"],
               },
               children: [
                 {
@@ -618,8 +634,10 @@ export function getRouteMap({
             {
               path: "/collections",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("collections.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/collections"],
               },
               children: [
                 {
@@ -677,8 +695,10 @@ export function getRouteMap({
             {
               path: "/price-lists",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("priceLists.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/price-lists"],
               },
               children: [
                 {
@@ -750,8 +770,10 @@ export function getRouteMap({
             {
               path: "/customers",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("customers.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/customers"],
               },
               children: [
                 {
@@ -855,8 +877,10 @@ export function getRouteMap({
             {
               path: "/customer-groups",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("customerGroups.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/customer-groups"],
               },
               children: [
                 {
@@ -920,8 +944,10 @@ export function getRouteMap({
             {
               path: "/reservations",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("reservations.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/reservations"],
               },
               children: [
                 {
@@ -976,8 +1002,10 @@ export function getRouteMap({
             {
               path: "/inventory",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("inventory.domain"),
+                permissions: CORE_ROUTE_PERMISSIONS["/inventory"],
               },
               children: [
                 {
@@ -1052,7 +1080,14 @@ export function getRouteMap({
                 },
               ],
             },
-            ...coreRoutes,
+            {
+              // Enforces `handle.permissions` declared by extension routes
+              // (e.g. plugin pages exporting `export const handle = {
+              // permissions: ["company:read"] }`). Routes without a
+              // declaration render through unchanged.
+              element: <RoutePermissionGuard />,
+              children: coreRoutes,
+            },
           ],
         },
       ],
@@ -1090,9 +1125,10 @@ export function getRouteMap({
             {
               path: "regions",
               errorElement: <ErrorBoundary />,
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("regions.domain"),
+                permissions: SETTINGS_ROUTE_PERMISSIONS["/settings/regions"],
               },
               children: [
                 {
@@ -1145,35 +1181,45 @@ export function getRouteMap({
             {
               path: "store",
               errorElement: <ErrorBoundary />,
-              lazy: () => import("../../routes/store/store-detail"),
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("store.domain"),
+                permissions: SETTINGS_ROUTE_PERMISSIONS["/settings/store"],
               },
               children: [
                 {
-                  path: "edit",
-                  lazy: () => import("../../routes/store/store-edit"),
-                },
-                {
-                  path: "currencies",
-                  lazy: () => import("../../routes/store/store-add-currencies"),
-                },
-                {
-                  path: "locales",
-                  lazy: () => import("../../routes/store/store-add-locales"),
-                },
-                {
-                  path: "metadata/edit",
-                  lazy: () => import("../../routes/store/store-metadata"),
+                  path: "",
+                  lazy: () => import("../../routes/store/store-detail"),
+                  children: [
+                    {
+                      path: "edit",
+                      lazy: () => import("../../routes/store/store-edit"),
+                    },
+                    {
+                      path: "currencies",
+                      lazy: () =>
+                        import("../../routes/store/store-add-currencies"),
+                    },
+                    {
+                      path: "locales",
+                      lazy: () =>
+                        import("../../routes/store/store-add-locales"),
+                    },
+                    {
+                      path: "metadata/edit",
+                      lazy: () => import("../../routes/store/store-metadata"),
+                    },
+                  ],
                 },
               ],
             },
             {
               path: "users",
               errorElement: <ErrorBoundary />,
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("users.domain"),
+                permissions: SETTINGS_ROUTE_PERMISSIONS["/settings/users"],
               },
               children: [
                 {
@@ -1379,9 +1425,11 @@ export function getRouteMap({
             {
               path: "sales-channels",
               errorElement: <ErrorBoundary />,
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("salesChannels.domain"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/sales-channels"],
               },
               children: [
                 {
@@ -1445,9 +1493,10 @@ export function getRouteMap({
             {
               path: "locations",
               errorElement: <ErrorBoundary />,
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("locations.domain"),
+                permissions: SETTINGS_ROUTE_PERMISSIONS["/settings/locations"],
               },
               children: [
                 {
@@ -1681,9 +1730,11 @@ export function getRouteMap({
             {
               path: "product-tags",
               errorElement: <ErrorBoundary />,
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("productTags.domain"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/product-tags"],
               },
               children: [
                 {
@@ -1736,9 +1787,10 @@ export function getRouteMap({
             {
               path: "workflows",
               errorElement: <ErrorBoundary />,
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("workflowExecutions.domain"),
+                permissions: SETTINGS_ROUTE_PERMISSIONS["/settings/workflows"],
               },
               children: [
                 {
@@ -1773,9 +1825,11 @@ export function getRouteMap({
             {
               path: "product-types",
               errorElement: <ErrorBoundary />,
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("productTypes.domain"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/product-types"],
               },
               children: [
                 {
@@ -1829,9 +1883,11 @@ export function getRouteMap({
             },
             {
               path: "publishable-api-keys",
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("apiKeyManagement.domain.publishable"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/publishable-api-keys"],
               },
               children: [
                 {
@@ -1895,9 +1951,11 @@ export function getRouteMap({
             },
             {
               path: "secret-api-keys",
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("apiKeyManagement.domain.secret"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/secret-api-keys"],
               },
               children: [
                 {
@@ -1954,9 +2012,11 @@ export function getRouteMap({
             },
             {
               path: "tax-regions",
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("taxRegions.domain"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/tax-regions"],
               },
               children: [
                 {
@@ -2101,9 +2161,11 @@ export function getRouteMap({
             },
             {
               path: "return-reasons",
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("returnReasons.domain"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/return-reasons"],
               },
               children: [
                 {
@@ -2137,9 +2199,11 @@ export function getRouteMap({
             },
             {
               path: "refund-reasons",
-              element: <Outlet />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("refundReasons.domain"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/refund-reasons"],
               },
               children: [
                 {
@@ -2174,8 +2238,11 @@ export function getRouteMap({
             {
               path: "translations",
               errorElement: <ErrorBoundary />,
+              element: <RoutePermissionGuard />,
               handle: {
                 breadcrumb: () => t("translations.domain"),
+                permissions:
+                  SETTINGS_ROUTE_PERMISSIONS["/settings/translations"],
               },
               children: [
                 {
@@ -2200,7 +2267,12 @@ export function getRouteMap({
                 },
               ],
             },
-            ...settingsRoutes.flatMap((r) => r?.children || []),
+            {
+              // Same as the core extension wrapper: enforces
+              // `handle.permissions` declared by settings extension routes.
+              element: <RoutePermissionGuard />,
+              children: settingsRoutes.flatMap((r) => r?.children || []),
+            },
           ],
         },
       ],

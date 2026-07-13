@@ -40,6 +40,11 @@ type MenuItem = {
   nested?: NestedRoutePosition
   rank?: number
   translationNs?: string
+  /**
+   * Reference to the `permissions` property of the route's `handle` export,
+   * so the sidebar can hide items the user is not allowed to access.
+   */
+  permissions?: string
 }
 
 type MenuItemResult = {
@@ -69,14 +74,15 @@ function generateCode(results: MenuItemResult[]): string {
 }
 
 function formatMenuItem(route: MenuItem): string {
-  const { label, icon, path, nested, rank, translationNs } = route
+  const { label, icon, path, nested, rank, translationNs, permissions } = route
   return `{
     label: ${label},
     icon: ${icon || "undefined"},
     path: "${path}",
     nested: ${nested ? `"${nested}"` : "undefined"},
     rank: ${rank !== undefined ? rank : "undefined"},
-    translationNs: ${translationNs ? `${translationNs}` : "undefined"}
+    translationNs: ${translationNs ? `${translationNs}` : "undefined"},
+    permissions: ${permissions || "undefined"}
   }`
 }
 
@@ -112,8 +118,10 @@ async function parseFile(
     })
   }
 
-  const import_ = generateImport(file, index)
-  const menuItem = generateMenuItem(config, file, index)
+  const hasHandle = await hasHandleExport(file)
+
+  const import_ = generateImport(file, index, hasHandle)
+  const menuItem = generateMenuItem(config, file, index, hasHandle)
 
   return {
     import: import_,
@@ -121,15 +129,26 @@ async function parseFile(
   }
 }
 
-function generateImport(file: string, index: number): string {
+function generateImport(
+  file: string,
+  index: number,
+  hasHandle: boolean
+): string {
   const path = normalizePath(file)
-  return `import { config as ${generateRouteConfigName(index)} } from "${path}"`
+  const namedImports = [
+    `config as ${generateRouteConfigName(index)}`,
+    hasHandle && `handle as ${generateRouteHandleName(index)}`,
+  ]
+    .filter(Boolean)
+    .join(", ")
+  return `import { ${namedImports} } from "${path}"`
 }
 
 function generateMenuItem(
   config: RouteConfig,
   file: string,
-  index: number
+  index: number,
+  hasHandle: boolean
 ): MenuItem {
   const configName = generateRouteConfigName(index)
   return {
@@ -141,7 +160,51 @@ function generateMenuItem(
     translationNs: config.translationNs
       ? `${configName}.translationNs`
       : undefined,
+    permissions: hasHandle
+      ? `${generateRouteHandleName(index)}.permissions`
+      : undefined,
   }
+}
+
+/**
+ * Checks whether the route file exports a `handle` object, e.g.
+ * `export const handle = { permissions: ["company:read"] }`.
+ */
+async function hasHandleExport(file: string): Promise<boolean> {
+  const code = await fs.readFile(file, "utf-8")
+
+  let ast: ParseResult<File> | null = null
+
+  try {
+    ast = parse(code, getParserOptions(file))
+  } catch (_e) {
+    return false
+  }
+
+  let hasHandle = false
+
+  try {
+    traverse(ast, {
+      ExportNamedDeclaration(path) {
+        const declaration = path.node.declaration
+
+        if (declaration?.type === "VariableDeclaration") {
+          declaration.declarations.forEach((decl) => {
+            if (decl.id.type === "Identifier" && decl.id.name === "handle") {
+              hasHandle = true
+            }
+          })
+        }
+      },
+    })
+  } catch (e) {
+    logger.error(`An error occurred while checking for a handle export.`, {
+      file,
+      error: e,
+    })
+  }
+
+  return hasHandle
 }
 
 async function getRouteConfig(file: string): Promise<RouteConfig | null> {
@@ -284,4 +347,8 @@ function processConfigProperties(
 
 function generateRouteConfigName(index: number): string {
   return `RouteConfig${index}`
+}
+
+function generateRouteHandleName(index: number): string {
+  return `RouteHandle${index}`
 }

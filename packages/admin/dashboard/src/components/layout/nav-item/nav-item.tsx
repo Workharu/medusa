@@ -35,6 +35,11 @@ type NestedItemProps = {
   label: string
   to: string
   translationNs?: string
+  /**
+   * Permissions required to see this item. Populated for extension routes
+   * that export a `handle` with `permissions`.
+   */
+  permissions?: string | string[]
 }
 
 export type INavItem = {
@@ -46,6 +51,11 @@ export type INavItem = {
   from?: string
   nested?: string
   translationNs?: string
+  /**
+   * Permissions required to see this item. Populated for extension routes
+   * that export a `handle` with `permissions`.
+   */
+  permissions?: string | string[]
 }
 
 const BASE_NAV_LINK_CLASSES =

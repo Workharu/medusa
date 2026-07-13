@@ -71,7 +71,8 @@ const expectedMenuItems = `
             path: "/one",
             nested: undefined,
             rank: undefined,
-            translationNs: undefined
+            translationNs: undefined,
+            permissions: undefined
           },
           {
             label: RouteConfig1.label,
@@ -79,7 +80,8 @@ const expectedMenuItems = `
             path: "/two",
             nested: undefined,
             rank: undefined,
-            translationNs: undefined
+            translationNs: undefined,
+            permissions: undefined
           },
           {
             label: RouteConfig2.label,
@@ -87,7 +89,8 @@ const expectedMenuItems = `
             path: "/three",
             nested: "/products",
             rank: undefined,
-            translationNs: undefined
+            translationNs: undefined,
+            permissions: undefined
           }
         ]
       `
@@ -202,7 +205,8 @@ describe("generateMenuItems", () => {
           path: "/analytics",
           nested: undefined,
           rank: 1,
-          translationNs: undefined
+          translationNs: undefined,
+          permissions: undefined
         },
         {
           label: RouteConfig1.label,
@@ -210,7 +214,8 @@ describe("generateMenuItems", () => {
           path: "/reports",
           nested: undefined,
           rank: 2,
-          translationNs: undefined
+          translationNs: undefined,
+          permissions: undefined
         }
       ]
     `
@@ -256,7 +261,58 @@ describe("generateMenuItems", () => {
           path: "/custom",
           nested: undefined,
           rank: undefined,
-          translationNs: RouteConfig0.translationNs
+          translationNs: RouteConfig0.translationNs,
+          permissions: undefined
+        }
+      ]
+    `
+
+    expect(utils.normalizeString(result.code)).toEqual(
+      utils.normalizeString(expectedOutput)
+    )
+  })
+
+  it("should include permissions from the handle export", async () => {
+    const mockFileWithHandle = `
+      import { defineRouteConfig } from "@medusajs/admin-sdk"
+
+      const Page = () => {
+          return <div>Companies</div>
+      }
+
+      export const config = defineRouteConfig({
+          label: "Companies",
+      })
+
+      export const handle = {
+          permissions: ["company:read"],
+      }
+
+      export default Page
+    `
+
+    const mockFiles = ["Users/user/medusa/src/admin/routes/companies/page.tsx"]
+    vi.mocked(utils.crawl).mockResolvedValue(mockFiles)
+    vi.mocked(fs.readFile).mockResolvedValue(mockFileWithHandle)
+
+    const result = await generateMenuItems(
+      new Set(["Users/user/medusa/src/admin"])
+    )
+
+    expect(result.imports).toEqual([
+      `import { config as RouteConfig0, handle as RouteHandle0 } from "Users/user/medusa/src/admin/routes/companies/page.tsx"`,
+    ])
+
+    const expectedOutput = `
+      menuItems: [
+        {
+          label: RouteConfig0.label,
+          icon: undefined,
+          path: "/companies",
+          nested: undefined,
+          rank: undefined,
+          translationNs: undefined,
+          permissions: RouteHandle0.permissions
         }
       ]
     `
@@ -335,7 +391,8 @@ describe("generateMenuItems", () => {
           path: "/first",
           nested: undefined,
           rank: 1,
-          translationNs: undefined
+          translationNs: undefined,
+          permissions: undefined
         },
         {
           label: RouteConfig1.label,
@@ -343,7 +400,8 @@ describe("generateMenuItems", () => {
           path: "/second",
           nested: undefined,
           rank: undefined,
-          translationNs: undefined
+          translationNs: undefined,
+          permissions: undefined
         },
         {
           label: RouteConfig2.label,
@@ -351,7 +409,8 @@ describe("generateMenuItems", () => {
           path: "/third",
           nested: undefined,
           rank: 0,
-          translationNs: undefined
+          translationNs: undefined,
+          permissions: undefined
         }
       ]
     `

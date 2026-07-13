@@ -214,6 +214,7 @@ export class DashboardApp {
         nested: item.nested,
         rank: item.rank,
         translationNs: item.translationNs,
+        permissions: item.permissions,
       }
 
       if (parentPath !== "/" && tempRegistry[parentPath]) {

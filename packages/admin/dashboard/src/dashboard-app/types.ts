@@ -30,6 +30,11 @@ export type MenuItemExtension = {
   nested?: NestedRoutePosition
   rank?: number
   translationNs?: string
+  /**
+   * Permissions declared by the route's `handle` export. Used to hide the
+   * menu item from users that lack access to the route.
+   */
+  permissions?: string | string[]
 }
 
 export type WidgetExtension = {
